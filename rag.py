@@ -5,8 +5,8 @@ import boto3
 import os
 from botocore.exceptions import ClientError
 
-# Read Bedrock Knowledge Base ID from environment variables or use fallback
-BEDROCK_KB_ID = os.getenv("BEDROCK_KB_ID", "YOUR_KNOWLEDGE_BASE_ID")
+# Read Bedrock Knowledge Base ID from environment variables with your KB ID as fallback
+BEDROCK_KB_ID = os.getenv("BEDROCK_KB_ID", "VB7UN2KGTA")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
 class GuidelineRAG:
