@@ -1,6 +1,7 @@
 # main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from logicengine import LogicEngine, PatientPayload
@@ -19,6 +20,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/", response_class=HTMLResponse)
+def serve_frontend():
+    """Serve the frontend manual input dashboard."""
+    try:
+        with open("index.html", "r") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>index.html not found in server root directory.</h1>"
 
 class ChatPayload(BaseModel):
     patient_payload: PatientPayload
