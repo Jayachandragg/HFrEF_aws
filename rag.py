@@ -40,12 +40,12 @@ class GuidelineRAG:
             )
 
         try:
-            # Retrieve top 3 relevant chunks from AWS Bedrock OpenSearch Vector Store
+            # Retrieve top relevant chunks using managed search configuration
             response = self.bedrock_agent_runtime.retrieve(
                 knowledgeBaseId=BEDROCK_KB_ID,
                 retrievalQuery={'text': query},
                 retrievalConfiguration={
-                    'vectorSearchConfiguration': {
+                    'managedSearchConfiguration': {
                         'numberOfResults': 3
                     }
                 }
