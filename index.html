@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HFrEF AI Agent - Clinical Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div class="max-w-6xl mx-auto p-6">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-blue-800">HFrEF GDMT Titration Agent</h1>
+            <p class="text-gray-600">Manual Clinical Data Entry & Decision Support Engine</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Input Form Card -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4 text-blue-700">Patient Telemetry & Labs</h2>
+                <form id="evaluationForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Patient ID</label>
+                        <input type="text" id="patient_id" value="PT-1002" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">SBP (mmHg)</label>
+                            <input type="number" id="sbp" value="120" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Heart Rate (bpm)</label>
+                            <input type="number" id="hr" value="72" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">SpO2 (%)</label>
+                            <input type="number" id="spo2" value="98" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Thoracic Fluid (%)</label>
+                            <input type="number" id="impedance_fluid_pct" value="28.5" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">K+ (mEq/L)</label>
+                            <input type="number" id="k" value="4.2" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">eGFR</label>
+                            <input type="number" id="egfr" value="75" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Creatinine</label>
+                            <input type="number" id="creatinine" value="1.1" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Comorbidities (comma-separated)</label>
+                        <input type="text" id="comorbidities" value="COPD" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2">
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition">
+                        Run Stage 1 Evaluation
+                    </button>
+                </form>
+
+                <!-- RAG Chat Section -->
+                <div class="mt-8 border-t pt-4">
+                    <h3 class="text-lg font-semibold mb-2 text-blue-700">Clinical Guideline Assistant (Stage 2 RAG)</h3>
+                    <input type="text" id="chatQuestion" placeholder="Ask about guidelines (e.g., Beta-blocker titration for COPD?)" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 mb-2">
+                    <button id="sendChat" class="w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-700 transition">
+                        Ask RAG Agent
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Display Card -->
+            <div class="bg-white p-6 rounded-lg shadow-md flex flex-col">
+                <h2 class="text-xl font-semibold mb-4 text-blue-700">Engine Output & Decision Log</h2>
+                <div id="resultsOutput" class="bg-gray-900 text-green-400 p-4 rounded-md font-mono text-sm flex-grow overflow-y-auto h-96 whitespace-pre-wrap">
+                    Awaiting evaluation input...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update with your EC2 instance endpoint (e.g., http://<EC2-IP>:8000)
+        const API_BASE_URL = "http://3.80.205.252:8000";
+
+        function getPayload() {
+            return {
+                patient_id: document.getElementById("patient_id").value,
+                telemetry: {
+                    sbp: parseFloat(document.getElementById("sbp").value),
+                    hr: parseFloat(document.getElementById("hr").value),
+                    spo2: parseFloat(document.getElementById("spo2").value),
+                    impedance_fluid_pct: parseFloat(document.getElementById("impedance_fluid_pct").value)
+                },
+                labs: {
+                    k: parseFloat(document.getElementById("k").value),
+                    egfr: parseFloat(document.getElementById("egfr").value),
+                    creatinine: parseFloat(document.getElementById("creatinine").value)
+                },
+                comorbidities: document.getElementById("comorbidities").value.split(",").map(s => s.trim()).filter(Boolean)
+            };
+        }
+
+        document.getElementById("evaluationForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const outputBox = document.getElementById("resultsOutput");
+            outputBox.textContent = "Running Stage 1 Deterministic Engine...";
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/evaluate-patient`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(getPayload())
+                });
+                const data = await response.json();
+                outputBox.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                outputBox.textContent = "Error connecting to EC2 backend: " + err.message;
+            }
+        });
+
+        document.getElementById("sendChat").addEventListener("click", async () => {
+            const outputBox = document.getElementById("resultsOutput");
+            const question = document.getElementById("chatQuestion").value;
+            if (!question) {
+                alert("Please enter a question for the RAG agent.");
+                return;
+            }
+
+            outputBox.textContent = "Querying Stage 2 RAG + Rules Engine...";
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/chat`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        patient_payload: getPayload(),
+                        question: question
+                    })
+                });
+                const data = await response.json();
+                outputBox.textContent = data.response;
+            } catch (err) {
+                outputBox.textContent = "Error connecting to EC2 backend: " + err.message;
+            }
+        });
+    </script>
+</body>
+</html>
