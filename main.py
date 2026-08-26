@@ -2,7 +2,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
 
 from logicengine import LogicEngine, PatientPayload
 from rag import rag_engine
@@ -33,13 +32,9 @@ def evaluate_patient(payload: PatientPayload):
 @app.post("/api/v1/chat")
 def chat_with_agent(payload: ChatPayload):
     """Stage 2: Combine Stage 1 deterministic results with RAG guideline retrieval."""
-    # Run Stage 1 evaluation first to get exact structural actions
     stage1_result = LogicEngine.run_7_steps(payload.patient_payload)
-    
-    # Query RAG engine for relevant clinical guideline text
     retrieved_guidelines = rag_engine.query_guidelines(payload.question)
     
-    # Construct grounded response combining deterministic rules and guidelines
     response_text = (
         f"Based on the Stage 1 evaluation for Patient {payload.patient_payload.patient_id}, "
         f"the fluid volume status is classified as **{stage1_result['fluid_status']}** "
