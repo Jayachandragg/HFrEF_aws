@@ -4,95 +4,259 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HFrEF AI Agent - Clinical Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --navy:    #0a1628;
+            --navy2:   #0f1f3d;
+            --blue:    #2563eb;
+            --blue2:   #1d4ed8;
+            --teal:    #0d9488;
+            --teal2:   #0f766e;
+            --green:   #059669;
+            --green2:  #047857;
+            --white:   #ffffff;
+            --text:    #e2e8f0;
+            --muted:   #94a3b8;
+            --border:  rgba(255,255,255,0.08);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--navy);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .bg-glow {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background: radial-gradient(ellipse 70% 50% at 15% 0%, rgba(13,148,136,0.12) 0%, transparent 60%),
+                        radial-gradient(ellipse 50% 40% at 100% 100%, rgba(37,99,235,0.08) 0%, transparent 60%);
+        }
+        .bg-grid {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background-image: linear-gradient(var(--border) 1px, transparent 1px),
+                               linear-gradient(90deg, var(--border) 1px, transparent 1px);
+            background-size: 60px 60px;
+            mask-image: radial-gradient(ellipse at 10% 0%, black 0%, transparent 70%);
+        }
+
+        .page-wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 3.5rem 1.5rem 4rem; }
+
+        .app-header { margin-bottom: 2.5rem; }
+        .app-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(1.9rem, 4vw, 2.6rem);
+            color: var(--white);
+            line-height: 1.15;
+            margin-bottom: 0.6rem;
+        }
+        .app-sub { color: var(--muted); font-size: 1rem; }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.75rem;
+            align-items: start;
+        }
+        @media (max-width: 900px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: border-color 0.2s;
+        }
+        .card:hover { border-color: rgba(255,255,255,0.15); }
+
+        .card-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.3rem;
+            color: var(--white);
+            margin-bottom: 1.6rem;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .card-title::before {
+            content: ''; width: 8px; height: 8px; border-radius: 50%;
+            background: var(--teal); flex-shrink: 0;
+        }
+
+        form { display: flex; flex-direction: column; gap: 1.1rem; }
+
+        .field label {
+            display: block;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+        .field input {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.65rem 0.8rem;
+            color: var(--white);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.92rem;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .field input:focus {
+            outline: none;
+            border-color: var(--teal);
+            background: rgba(255,255,255,0.06);
+        }
+
+        .field-row { display: grid; gap: 0.9rem; }
+        .field-row.cols-2 { grid-template-columns: 1fr 1fr; }
+        .field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+        .btn {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border-radius: 10px;
+            border: none;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.02em;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn:active { transform: translateY(1px); }
+        .btn-run { background: var(--teal); }
+        .btn-run:hover { background: var(--teal2); }
+        .btn-chat { background: var(--green); }
+        .btn-chat:hover { background: var(--green2); }
+
+        .divider { height: 1px; background: var(--border); margin: 1.9rem 0 1.3rem; }
+
+        .subcard-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.05rem;
+            color: var(--white);
+            margin-bottom: 0.9rem;
+        }
+
+        #chatQuestion { margin-bottom: 0.9rem; }
+
+        .output-card { display: flex; flex-direction: column; height: 100%; }
+
+        .console {
+            background: #050b16;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.82rem;
+            color: #5eead4;
+            line-height: 1.65;
+            flex-grow: 1;
+            overflow-y: auto;
+            height: 420px;
+            white-space: pre-wrap;
+        }
+        .console::-webkit-scrollbar { width: 6px; }
+        .console::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-900">
-    <div class="max-w-6xl mx-auto p-6">
-        <header class="mb-8">
-            <h1 class="text-3xl font-bold text-blue-800">HFrEF GDMT Titration Agent</h1>
-            <p class="text-gray-600">Manual Clinical Data Entry & Decision Support Engine</p>
+<body>
+    <div class="bg-glow"></div>
+    <div class="bg-grid"></div>
+
+    <div class="page-wrap">
+        <header class="app-header">
+            <h1 class="app-title">HFrEF GDMT Titration Agent</h1>
+            <p class="app-sub">Manual Clinical Data Entry &amp; Decision Support Engine</p>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="dashboard-grid">
             <!-- Input Form Card -->
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-xl font-semibold mb-4 text-blue-700">Patient Telemetry & Labs</h2>
-                <form id="evaluationForm" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Patient ID</label>
-                        <input type="text" id="patient_id" value="PT-1002" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
+            <div class="card">
+                <h2 class="card-title">Patient Telemetry &amp; Labs</h2>
+                <form id="evaluationForm">
+                    <div class="field">
+                        <label>Patient ID</label>
+                        <input type="text" id="patient_id" value="PT-1002" required>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">SBP (mmHg)</label>
-                            <input type="number" id="sbp" value="120" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
+                    <div class="field-row cols-2">
+                        <div class="field">
+                            <label>SBP (mmHg)</label>
+                            <input type="number" id="sbp" value="120" step="0.1" required>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Heart Rate (bpm)</label>
-                            <input type="number" id="hr" value="72" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">SpO2 (%)</label>
-                            <input type="number" id="spo2" value="98" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Thoracic Fluid (%)</label>
-                            <input type="number" id="impedance_fluid_pct" value="28.5" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
+                        <div class="field">
+                            <label>Heart Rate (bpm)</label>
+                            <input type="number" id="hr" value="72" step="0.1" required>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-3 gap-2">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">K+ (mEq/L)</label>
-                            <input type="number" id="k" value="4.2" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
+                    <div class="field-row cols-2">
+                        <div class="field">
+                            <label>SpO2 (%)</label>
+                            <input type="number" id="spo2" value="98" step="0.1" required>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">eGFR</label>
-                            <input type="number" id="egfr" value="75" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Creatinine</label>
-                            <input type="number" id="creatinine" value="1.1" step="0.1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" required>
+                        <div class="field">
+                            <label>Thoracic Fluid (%)</label>
+                            <input type="number" id="impedance_fluid_pct" value="28.5" step="0.1" required>
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Comorbidities (comma-separated)</label>
-                        <input type="text" id="comorbidities" value="COPD" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2">
+                    <div class="field-row cols-3">
+                        <div class="field">
+                            <label>K+ (mEq/L)</label>
+                            <input type="number" id="k" value="4.2" step="0.1" required>
+                        </div>
+                        <div class="field">
+                            <label>eGFR</label>
+                            <input type="number" id="egfr" value="75" step="0.1" required>
+                        </div>
+                        <div class="field">
+                            <label>Creatinine</label>
+                            <input type="number" id="creatinine" value="1.1" step="0.1" required>
+                        </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition">
-                        Run Stage 1 Evaluation
-                    </button>
+                    <div class="field">
+                        <label>Comorbidities (comma-separated)</label>
+                        <input type="text" id="comorbidities" value="COPD">
+                    </div>
+
+                    <button type="submit" class="btn btn-run">Run Stage 1 Evaluation</button>
                 </form>
 
                 <!-- RAG Chat Section -->
-                <div class="mt-8 border-t pt-4">
-                    <h3 class="text-lg font-semibold mb-2 text-blue-700">Clinical Guideline Assistant (Stage 2 RAG)</h3>
-                    <input type="text" id="chatQuestion" placeholder="Ask about guidelines (e.g., Beta-blocker titration for COPD?)" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 mb-2">
-                    <button id="sendChat" class="w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-700 transition">
-                        Ask RAG Agent
-                    </button>
+                <div class="divider"></div>
+                <h3 class="subcard-title">Clinical Guideline Assistant (Stage 2 RAG)</h3>
+                <div class="field">
+                    <input type="text" id="chatQuestion" placeholder="Ask about guidelines (e.g., Beta-blocker titration for COPD?)">
                 </div>
+                <button id="sendChat" class="btn btn-chat">Ask RAG Agent</button>
             </div>
 
             <!-- Results Display Card -->
-            <div class="bg-white p-6 rounded-lg shadow-md flex flex-col">
-                <h2 class="text-xl font-semibold mb-4 text-blue-700">Engine Output & Decision Log</h2>
-                <div id="resultsOutput" class="bg-gray-900 text-green-400 p-4 rounded-md font-mono text-sm flex-grow overflow-y-auto h-96 whitespace-pre-wrap">
-                    Awaiting evaluation input...
-                </div>
+            <div class="card output-card">
+                <h2 class="card-title">Engine Output &amp; Decision Log</h2>
+                <div id="resultsOutput" class="console">Awaiting evaluation input...</div>
             </div>
         </div>
     </div>
 
     <script>
         // Update with your EC2 instance endpoint (e.g., http://<EC2-IP>:8000)
-        const API_BASE_URL ="https://jlqbjfz355.execute-api.us-east-1.amazonaws.com/prod";
+        const API_BASE_URL = "http://3.80.205.252:8000";
 
         function getPayload() {
             return {
